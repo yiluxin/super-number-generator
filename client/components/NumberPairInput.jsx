@@ -12,7 +12,7 @@ NumberPairInput = React.createClass({
     let end = React.findDOMNode(this.refs.end).value.trim();
 
     if (!start || !end || start.length < START_LENGTH || end.length < END_LENGTH) {
-      alert('请输入4位开头号码和3位末尾号码');
+      alert(`请输入${START_LENGTH}位开头号码和${END_LENGTH}位末尾号码`);
       return;
     }
 
