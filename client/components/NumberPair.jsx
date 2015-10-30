@@ -10,7 +10,7 @@ NumberPair = React.createClass({
   render() {
     return (
       <li className="list-group-item">
-        <span>{`${this.props.numberPair.start}xxx${this.props.numberPair.end}`}</span>
+        <span>{`${this.props.numberPair.start} --- ${this.props.numberPair.end}`}</span>
         <button className="btn btn-default btn-sm pull-right" onClick={this.handleRemove}>删除</button>
       </li>
     );
