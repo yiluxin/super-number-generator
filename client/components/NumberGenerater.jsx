@@ -3,6 +3,7 @@ START_LENGTH = 3;
 END_LENGTH = 5;
 MIDDLE_LENGTH = 3;
 NUMBERS_COUNT = 1000;
+BOUND = 100;
 
 NumberGenerator = React.createClass({
   mixins: [ReactMeteorData],
@@ -45,7 +46,38 @@ NumberGenerator = React.createClass({
         });
       }
 
-      for (let i = from; i < from + 100; i++) { // 每次生成100个
+      function onSuccess(contact) {
+        contact = null;
+
+        self.setState({
+          completedCount: self.state.completedCount + 1
+        });
+
+        if (self.state.completedCount === NUMBERS_COUNT) { // 生成结束，在100%进度条停留1秒
+          Meteor.call('insertNumberPair', start, end, function(err, result) {
+            if (err) {
+              console.log(err.reason);
+            }
+          });
+          window.setTimeout(function() {
+            self.setState({
+              isGenerating: false,
+              completedCount: 0
+            });
+          }, 1000);
+          return ;
+        }
+
+        if (self.state.completedCount % BOUND === 0) {
+          generate100Numbers(self.state.completedCount);
+        }
+      };
+
+      function onError(contactError) {
+        console.log(contactError);
+      };
+
+      for (let i = from; i < from + BOUND; i++) { // 每次生成100个
         let number = start + zeroPad(i, MIDDLE_LENGTH) + end;
         let contact = navigator.contacts.create();
         let phoneNumbers = [];
@@ -53,34 +85,6 @@ NumberGenerator = React.createClass({
         contact.displayName = number;
         contact.phoneNumbers = phoneNumbers;
 
-        function onSuccess(contact) {
-          self.setState({
-            completedCount: self.state.completedCount + 1
-          });
-
-          if (self.state.completedCount === NUMBERS_COUNT) { // 生成结束，在100%进度条停留1秒
-            Meteor.call('insertNumberPair', start, end, function(err, result) {
-              if (err) {
-                console.log(err.reason);
-              }
-            });
-            window.setTimeout(function() {
-              self.setState({
-                isGenerating: false,
-                completedCount: 0
-              });
-            }, 1000);
-            return ;
-          }
-
-          if (self.state.completedCount % 100 === 0) {
-            generate100Numbers(self.state.completedCount);
-          }
-        };
-
-        function onError(contactError) {
-          console.log(contactError);
-        };
 
         contact.save(onSuccess, onError);
       }
@@ -91,13 +95,16 @@ NumberGenerator = React.createClass({
   },
 
   onRemoveNumberPair(_id) {
+
+    // 找出1000个号码（先用末位数字匹配，再用开头数字）
+
+    // 分段删除（200个为界）
+
     Meteor.call('removeNumberPair', _id, function(err, result) {
       if (err) {
         console.log(err.reason);
       }
     });
-
-    // 从手机通讯录中删除
   },
 
   renderLoading() {
