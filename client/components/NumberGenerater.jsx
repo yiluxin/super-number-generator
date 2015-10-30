@@ -1,8 +1,8 @@
 NUMBER_LENGTH = 11;
 START_LENGTH = 3;
-END_LENGTH = 6;
-MIDDLE_LENGTH = 2;
-NUMBERS_COUNT = 100;
+END_LENGTH = 5;
+MIDDLE_LENGTH = 3;
+NUMBERS_COUNT = 1000;
 
 NumberGenerator = React.createClass({
   mixins: [ReactMeteorData],
@@ -43,41 +43,52 @@ NumberGenerator = React.createClass({
       }
     });
 
-    // 导入到手机通讯录
-    for (let i = 0; i < NUMBERS_COUNT; i++) {
-      self.setState({
-        isGenerating: true
-      });
-
-      let number = start + zeroPad(i, MIDDLE_LENGTH) + end;
-      let contact = navigator.contacts.create();
-      let phoneNumbers = [];
-      phoneNumbers[0] = new ContactField('mobile', number, true);
-      contact.displayName = number;
-      contact.phoneNumbers = phoneNumbers;
-
-      
-      function onSuccess(contact) {
+    function generate100Numbers(from) {
+      if (from === 0) {
         self.setState({
-          completedCount: self.state.completedCount + 1
+          isGenerating: true
         });
-        if (self.state.completedCount === NUMBERS_COUNT) {
-          window.setTimeout(function() {
-            self.setState({
-              isGenerating: false,
-              completedCount: 0
-            });
-          }, 1000);
-        }
-      };
+      }
 
-      function onError(contactError) {
-        console.log(contactError);
-      };
+      for (let i = from; i < from + 100; i++) { // 每次生成100个
+        let number = start + zeroPad(i, MIDDLE_LENGTH) + end;
+        let contact = navigator.contacts.create();
+        let phoneNumbers = [];
+        phoneNumbers[0] = new ContactField('mobile', number, true);
+        contact.displayName = number;
+        contact.phoneNumbers = phoneNumbers;
 
-      contact.save(onSuccess, onError);
-      
+        function onSuccess(contact) {
+          self.setState({
+            completedCount: self.state.completedCount + 1
+          });
+
+          if (self.state.completedCount === NUMBERS_COUNT) { // 生成结束，在100%进度条停留1秒
+            debugger;
+            window.setTimeout(function() {
+              self.setState({
+                isGenerating: false,
+                completedCount: 0
+              });
+            }, 1000);
+            return ;
+          }
+
+          if (self.state.completedCount % 100 === 0) {
+            generate100Numbers(self.state.completedCount);
+          }
+        };
+
+        function onError(contactError) {
+          console.log(contactError);
+        };
+
+        contact.save(onSuccess, onError);
+      }
     }
+
+    // 导入到手机通讯录
+    generate100Numbers(0);
   },
 
   onRemoveNumberPair(_id) {
@@ -97,12 +108,15 @@ NumberGenerator = React.createClass({
           <div>
             {this.state.isGenerating ? <h3>导入中，请稍候</h3> : null}
             {this.state.isRemoving ? <h3>删除中，请稍候</h3> : null}
-            {this.isInProgress() ? <ProgressBar completedCount={this.state.completedCount} /> : null}
-            <NumberPairInput onInsertNumberPair={this.onInsertNumberPair} numberPairs={this.data.numberPairs}/>
-            <NumberPairsList onRemoveNumberPair={this.onRemoveNumberPair} numberPairs={this.data.numberPairs}/>
+            {this.isInProgress() ? <ProgressBar completedCount={this.state.completedCount} /> :
+              <div>
+                <NumberPairInput onInsertNumberPair={this.onInsertNumberPair} numberPairs={this.data.numberPairs}/>
+                <NumberPairsList onRemoveNumberPair={this.onRemoveNumberPair} numberPairs={this.data.numberPairs}/>
+              </div>
+            }
+            </div>
+            : <div className="well">数据加载中，请稍后</div>}
           </div>
-          : <div className="well">数据加载中，请稍后</div>}
-        </div>
     );
   },
 
