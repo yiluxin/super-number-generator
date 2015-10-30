@@ -37,11 +37,6 @@ NumberGenerator = React.createClass({
       return string;
     }
 
-    Meteor.call('insertNumberPair', start, end, function(err, result) {
-      if (err) {
-        console.log(err.reason);
-      }
-    });
 
     function generate100Numbers(from) {
       if (from === 0) {
@@ -64,7 +59,11 @@ NumberGenerator = React.createClass({
           });
 
           if (self.state.completedCount === NUMBERS_COUNT) { // 生成结束，在100%进度条停留1秒
-            debugger;
+            Meteor.call('insertNumberPair', start, end, function(err, result) {
+              if (err) {
+                console.log(err.reason);
+              }
+            });
             window.setTimeout(function() {
               self.setState({
                 isGenerating: false,
@@ -113,7 +112,7 @@ NumberGenerator = React.createClass({
                 <NumberPairInput onInsertNumberPair={this.onInsertNumberPair} numberPairs={this.data.numberPairs}/>
                 <NumberPairsList onRemoveNumberPair={this.onRemoveNumberPair} numberPairs={this.data.numberPairs}/>
               </div>
-            }
+              }
             </div>
             : <div className="well">数据加载中，请稍后</div>}
           </div>
