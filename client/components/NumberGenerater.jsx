@@ -39,7 +39,7 @@ NumberGenerator = React.createClass({
     }
 
 
-    function generate100Numbers(from) {
+    function generateNumbers(from) {
       if (from === 0) {
         self.setState({
           isGenerating: true
@@ -69,7 +69,7 @@ NumberGenerator = React.createClass({
         }
 
         if (self.state.completedCount % BOUND === 0) {
-          generate100Numbers(self.state.completedCount);
+          generateNumbers(self.state.completedCount);
         }
       };
 
@@ -91,20 +91,73 @@ NumberGenerator = React.createClass({
     }
 
     // 导入到手机通讯录
-    generate100Numbers(0);
+    generateNumbers(0);
   },
 
   onRemoveNumberPair(_id) {
+    var self = this;
+    let {start, end} = NumberPairs.findOne({_id: _id});
 
     // 找出1000个号码（先用末位数字匹配，再用开头数字）
+    function onSuccess(contacts) {
+      let filteredContacts = contacts.filter(function(contact) {
+        return contact.displayName.startsWith(start);
+      });
 
-    // 分段删除（200个为界）
+      // 分断删除1000个号码
+      removeNumbers(0);
 
-    Meteor.call('removeNumberPair', _id, function(err, result) {
-      if (err) {
-        console.log(err.reason);
+      function removeNumbers(from) {
+        if (from === 0) {
+          self.setState({
+            isRemoving: true
+          });
+        }
+
+        function onSuccess() {
+          self.setState({
+            completedCount: self.state.completedCount + 1
+          });
+
+          if (self.state.completedCount === NUMBERS_COUNT) {
+            Meteor.call('removeNumberPair', _id, function(err, result) {
+              if (err) {
+                console.log(err.reason);
+              }
+            });
+            window.setTimeout(function() {
+              self.setState({
+                isRemoving: false,
+                completedCount: 0
+              });
+            }, 1000);
+            return ;
+          }
+
+          if (self.state.completedCount % BOUND === 0) {
+            removeNumbers(self.state.completedCount);
+          }
+        }
+
+        function onError(contactError) {
+          console.log(contactError);
+        };
+
+        for (let i = from; i < from + BOUND; i++) {
+          filteredContacts[i].remove(onSuccess, onError);
+        }
       }
-    });
+    };
+
+    function onError(contactError) {
+      alert('onError!');
+    };
+
+    var options      = new ContactFindOptions();
+    options.filter   = end
+    options.multiple = true;
+    var fields       = [navigator.contacts.fieldType.displayName];
+    navigator.contacts.find(fields, onSuccess, onError, options);
   },
 
   renderLoading() {
